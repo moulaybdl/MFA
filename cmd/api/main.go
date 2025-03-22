@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"database/sql"
 	"flag"
 	"fmt"
 	"log"
@@ -14,9 +16,12 @@ type Config struct {
 	Port int `json:"port"`
 	Env string `json:"evn"`
 	Version string `json:"version"`
+	db struct {
+		dsn string
+	}
 }
 
-type applciation struct {
+type application struct {
 	cfg Config
 	logger *log.Logger
 }
@@ -34,9 +39,11 @@ func main() {
 	// initilize the logger:
 	logger := log.New(os.Stdout, "",  log.Ldate | log.Ltime)
 
+	// intilize the connection with the dabase
+
 
 	// initilize the application struct 
-	app := &applciation {
+	app := &application {
 		cfg: cfg,
 		logger: logger,
 	}
@@ -46,7 +53,7 @@ func main() {
 
 	srv := &http.Server{
 		Addr: fmt.Sprintf(":%d", cfg.Port),
-		Handler: mux,
+		Handler: app.routes(),
 		IdleTimeout: time.Minute,
 		ReadTimeout: 10 * time.Second,
 		WriteTimeout: 30 * time.Second,
@@ -56,5 +63,22 @@ func main() {
 	logger.Printf("starting %s server on %s", cfg.Env, srv.Addr)
 	err := srv.ListenAndServe()
 	logger.Fatal(err)
+
+}
+
+func openDB(cfg Config) (*sql.DB, error) {
+	db, err := sql.Open("postgres", cfg.db.dsn)
+	if err != nil {
+		return nil, err
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err = db.PingContext(ctx); err != nil {
+		return nil, err
+	}
+
+	return db, nil
 
 }
