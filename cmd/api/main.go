@@ -9,6 +9,9 @@ import (
 	"net/http"
 	"os"
 	"time"
+
+	_ "github.com/lib/pq"
+	"mfa.moulay/internal/data"
 )
 
 
@@ -24,6 +27,7 @@ type Config struct {
 type application struct {
 	cfg Config
 	logger *log.Logger
+	models data.Models
 }
 
 
@@ -39,13 +43,26 @@ func main() {
 	// initilize the logger:
 	logger := log.New(os.Stdout, "",  log.Ldate | log.Ltime)
 
-	// intilize the connection with the dabase
+	// intilize the connection with the database
+	cfg.db.dsn = "postgres://cns_moulay:password@localhost/cns_sec?sslmode=disable"
 
+	// initialize the connection to the database:
+	db ,err := openDB(cfg)
+	if err != nil {
+		logger.Fatal(err)
+	}
+	defer db.Close()
+
+	logger.Printf("database connection successful")
+
+	// initilize the models:
+	models := data.NewModel(db)
 
 	// initilize the application struct 
 	app := &application {
 		cfg: cfg,
 		logger: logger,
+		models: models,
 	}
 
 	mux := http.NewServeMux()
@@ -61,7 +78,7 @@ func main() {
 
 	// start the server:
 	logger.Printf("starting %s server on %s", cfg.Env, srv.Addr)
-	err := srv.ListenAndServe()
+	err = srv.ListenAndServe()
 	logger.Fatal(err)
 
 }
