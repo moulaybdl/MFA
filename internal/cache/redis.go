@@ -24,3 +24,4 @@ func NewRedisClient() (*redis.Client, error) {
 	return client, nil
 
 }
+
