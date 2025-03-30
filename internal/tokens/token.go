@@ -1,4 +1,4 @@
-package cache
+package tokens
 
 import (
 	"crypto/rand"
@@ -30,7 +30,7 @@ func GenerateActivationCode() (string, error) {
 	return base32.StdEncoding.WithPadding(base32.NoPadding).EncodeToString(randomByte), nil
 }
 
-func SetActivationCache(r http.Request, userID int, activationCode string, client *redis.Client) error {
+func SetActivationCache(r *http.Request, userID int, activationCode string, client *redis.Client) error {
 	field := fmt.Sprintf("%d", userID)
 
 	err := client.HSet(r.Context(), ActivationToken, map[string]string{
@@ -43,7 +43,7 @@ func SetActivationCache(r http.Request, userID int, activationCode string, clien
 	return nil
 } 
 
-func GetActivationCode(r http.Request, userID int, client *redis.Client) (string, error) {
+func GetActivationCode(r *http.Request, userID int, client *redis.Client) (string, error) {
 	field := fmt.Sprintf("%d", userID)
 
 	val, err := client.HGet(r.Context(), ActivationToken, field).Result()

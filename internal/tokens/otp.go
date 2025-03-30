@@ -30,7 +30,7 @@ func GenerateOTP() (string, error) {
 	return base32.StdEncoding.WithPadding(base32.NoPadding).EncodeToString(randomByte), nil
 }
 
-func SetOTPCache(otp string, userID int, client *redis.Client, r http.Request) error {
+func SetOTPCache(otp string, userID int, client *redis.Client, r *http.Request) error {
 	field := fmt.Sprintf("%d", userID)
 
 	err := client.HSet(r.Context(), OTPToken, map[string]string{
@@ -43,7 +43,7 @@ func SetOTPCache(otp string, userID int, client *redis.Client, r http.Request) e
 	return nil
 }
 
-func GetOTPCache(userID int, client *redis.Client, r http.Request) (string, error) {
+func GetOTPCache(userID int, client *redis.Client, r *http.Request) (string, error) {
 	field := fmt.Sprintf("%d", userID)
 
 	val, err := client.HGet(r.Context(), OTPToken, field).Result()

@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"mfa.moulay/internal/data"
+	"mfa.moulay/internal/tokens"
 	"mfa.moulay/internal/validator"
 )
 
@@ -61,8 +62,45 @@ func (app *application) createUser(w http.ResponseWriter, r *http.Request){
 		}
 	}
 
+	// generate the OTP:
+	otp, err := tokens.GenerateOTP() 
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	// Store the activation code:
+	err = tokens.SetOTPCache(otp, user.ID, app.redisClient, r)
+	if err != nil {
+		app.serverErrorResponse(w , r, err)
+		return
+	}
+
+	// generate the Activation code:
+	activation_code, err := tokens.GenerateActivationCode()
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	// Store the activate code
+	err = tokens.SetActivationCache(r, user.ID, activation_code, app.redisClient)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+
+	var output struct{
+		data.User 
+		Otp string `json:"otp"`
+	}
+
+	output.User = user
+	output.Otp = otp
+
 	
-	err = app.writeJSON(w, r, http.StatusCreated, envelope{"user": user}, nil)
+	err = app.writeJSON(w, r, http.StatusCreated, envelope{"user": output}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
@@ -72,7 +110,7 @@ func (app *application) createUser(w http.ResponseWriter, r *http.Request){
 }
 
 func (app *application) verifyOTP() {
-	
+
 }
 
 
