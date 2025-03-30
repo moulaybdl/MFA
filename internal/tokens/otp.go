@@ -31,11 +31,10 @@ func GenerateOTP() (string, error) {
 }
 
 func SetOTPCache(otp string, userID int, client *redis.Client, r *http.Request) error {
-	field := fmt.Sprintf("%d", userID)
 
-	err := client.HSet(r.Context(), OTPToken, map[string]string{
-		field: otp,
-	}, time.Minute * 5).Err()
+	key := fmt.Sprintf("%s:%d", OTPToken, userID)
+
+	err := client.Set(r.Context(), key, otp, time.Minute * 5).Err()
 	if err != nil {
 		return err
 	}
@@ -44,9 +43,11 @@ func SetOTPCache(otp string, userID int, client *redis.Client, r *http.Request) 
 }
 
 func GetOTPCache(userID int, client *redis.Client, r *http.Request) (string, error) {
-	field := fmt.Sprintf("%d", userID)
 
-	val, err := client.HGet(r.Context(), OTPToken, field).Result()
+	key := fmt.Sprintf("%s:%d", OTPToken, userID)
+
+
+	val, err := client.Get(r.Context(), key).Result()
 	if err == nil {
 		return "", err
 	}

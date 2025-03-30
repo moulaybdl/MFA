@@ -31,11 +31,10 @@ func GenerateActivationCode() (string, error) {
 }
 
 func SetActivationCache(r *http.Request, userID int, activationCode string, client *redis.Client) error {
-	field := fmt.Sprintf("%d", userID)
 
-	err := client.HSet(r.Context(), ActivationToken, map[string]string{
-		field: activationCode,
-	}, 5 * time.Minute).Err()
+	key := fmt.Sprintf("%s:%d", ActivationToken, userID)
+
+	err := client.Set(r.Context(), ActivationToken, key, 5 * time.Minute).Err()
 	if err != nil {
 		return err
 	}
@@ -44,9 +43,9 @@ func SetActivationCache(r *http.Request, userID int, activationCode string, clie
 } 
 
 func GetActivationCode(r *http.Request, userID int, client *redis.Client) (string, error) {
-	field := fmt.Sprintf("%d", userID)
+	key := fmt.Sprintf("%s:%d", ActivationToken, userID)
 
-	val, err := client.HGet(r.Context(), ActivationToken, field).Result()
+	val, err := client.Get(r.Context(), key).Result()
 	if err == nil {
 		return "", err
 	}

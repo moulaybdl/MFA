@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"log"
 	"net/http"
 
 	"mfa.moulay/internal/data"
@@ -69,12 +70,15 @@ func (app *application) createUser(w http.ResponseWriter, r *http.Request){
 		return
 	}
 
+	log.Print("otp generated")
+
 	// Store the activation code:
 	err = tokens.SetOTPCache(otp, user.ID, app.redisClient, r)
 	if err != nil {
 		app.serverErrorResponse(w , r, err)
 		return
 	}
+	log.Print("otp stored")
 
 	// generate the Activation code:
 	activation_code, err := tokens.GenerateActivationCode()
@@ -82,6 +86,7 @@ func (app *application) createUser(w http.ResponseWriter, r *http.Request){
 		app.serverErrorResponse(w, r, err)
 		return
 	}
+	log.Print("activation code generated")
 
 	// Store the activate code
 	err = tokens.SetActivationCache(r, user.ID, activation_code, app.redisClient)
@@ -89,6 +94,7 @@ func (app *application) createUser(w http.ResponseWriter, r *http.Request){
 		app.serverErrorResponse(w, r, err)
 		return
 	}
+	log.Print("activation code stored")
 
 
 	var output struct{
