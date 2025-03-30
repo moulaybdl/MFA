@@ -11,6 +11,8 @@ import (
 	"time"
 
 	_ "github.com/lib/pq"
+	"github.com/redis/go-redis/v9"
+	"mfa.moulay/internal/cache"
 	"mfa.moulay/internal/data"
 )
 
@@ -28,6 +30,7 @@ type application struct {
 	cfg Config
 	logger *log.Logger
 	models data.Models
+	redisClient *redis.Client
 }
 
 
@@ -58,11 +61,19 @@ func main() {
 	// initilize the models:
 	models := data.NewModel(db)
 
+	// Initilize the redis cache:
+	client, err := cache.NewRedisClient()
+	if err != nil {
+		logger.Fatal(err)
+	}
+
+
 	// initilize the application struct 
 	app := &application {
 		cfg: cfg,
 		logger: logger,
 		models: models,
+		redisClient: client,
 	}
 
 	mux := http.NewServeMux()
