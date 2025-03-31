@@ -96,6 +96,8 @@ func (app *application) createUser(w http.ResponseWriter, r *http.Request){
 	}
 	log.Print("activation code stored")
 
+	// send the activation code email
+
 
 	var output struct{
 		data.User 
@@ -115,8 +117,66 @@ func (app *application) createUser(w http.ResponseWriter, r *http.Request){
 	
 }
 
-func (app *application) verifyOTP() {
+func (app *application) verifyOTP(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		UserID int `json:"user_id"`
+		OTP string `json:"otp"`
+		ActivationCode string `json:"activation_code"`
+	}
 
+	// decode the struct:
+	err := app.readJSON(w, r, &input)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	//! change this operation so that it is done a middleware
+	// validate the otp code
+	otp_cache, err := tokens.GetOTPCache(input.UserID, app.redisClient, r)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+	log.Print("otp code retrieved")
+
+	err = tokens.VerifyOTPMatch(otp_cache, input.OTP)
+	if err != nil {
+		app.failedValidationResponse(w, r, map[string]string{
+			"error": "incorrect otp code",
+		})
+		return
+	}
+	log.Print("otp code passed validation")
+
+	// validate the activation code:
+	activation_cache, err := tokens.GetActivationCode(r, input.UserID, app.redisClient)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	err = tokens.VerifyActivationCode(activation_cache, input.ActivationCode)
+	if err != nil {
+		app.failedValidationResponse(w, r, map[string]string{
+			"error": "incorrect activation code",
+		})
+		return
+	}
+
+	// alter the state in the user table
+	err = app.models.Users.ChangeOTPSate(input.UserID)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	// write response:
+	err = app.writeJSON(w, r, http.StatusOK, envelope{"state":"sucess"}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
 }
 
 

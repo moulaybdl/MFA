@@ -112,3 +112,20 @@ func (m *UsersModel) Insert(user *User) error {
 }
 return nil
 }
+
+func (m *UsersModel) ChangeOTPSate(userID int) error {
+	query := `
+	UPDATE users
+	SET otp_activated = true
+	WHERE id = $1
+	`
+	args := []interface{}{userID}
+
+	_, err := m.DB.Exec(query, args...)
+	if err != nil {
+		return err
+	}
+
+	return nil
+
+}

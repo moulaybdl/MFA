@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"flag"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -14,6 +13,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"mfa.moulay/internal/cache"
 	"mfa.moulay/internal/data"
+	"mfa.moulay/internal/mailer"
 )
 
 
@@ -31,6 +31,7 @@ type application struct {
 	logger *log.Logger
 	models data.Models
 	redisClient *redis.Client
+	mailer mailer.Mailer
 }
 
 
@@ -74,13 +75,15 @@ func main() {
 		logger: logger,
 		models: models,
 		redisClient: client,
+		mailer: mailer.New("sandbox.smtp.mailtrap.io", 2525, "ce4ff5406e409d", "546853b1550b78", "Moulay <moulay.mohamed.bouabd.elli@ensia.edu.dz>"), //! values are hard coded gonna be replaced mnb3d
 	}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", app.healthCheckHandler)
 
 	srv := &http.Server{
-		Addr: fmt.Sprintf(":%d", cfg.Port),
+		// Addr: fmt.Sprintf(":%d", cfg.Port),
+		Addr: "0.0.0.0:8080",
 		Handler: app.routes(),
 		IdleTimeout: time.Minute,
 		ReadTimeout: 10 * time.Second,
