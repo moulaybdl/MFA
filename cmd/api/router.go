@@ -13,6 +13,7 @@ func (app *application) routes() *httprouter.Router {
 
 	// user routes:
 	router.HandlerFunc(http.MethodPost, "/v1/users", app.createUser)
+	router.HandlerFunc(http.MethodPost, "/v1/users/otp", app.verifyOTP)
 
 
 	return router

@@ -48,7 +48,7 @@ func GetOTPCache(userID int, client *redis.Client, r *http.Request) (string, err
 
 
 	val, err := client.Get(r.Context(), key).Result()
-	if err == nil {
+	if err != nil {
 		return "", err
 	}
 

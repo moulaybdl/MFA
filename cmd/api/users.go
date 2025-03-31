@@ -96,9 +96,23 @@ func (app *application) createUser(w http.ResponseWriter, r *http.Request){
 	}
 	log.Print("activation code stored")
 
+	var templateInput struct {
+		data.User
+		ActivationCode string
+	}
+
+	templateInput.User = user
+	templateInput.ActivationCode = activation_code
+
 	// send the activation code email
+	err = app.mailer.Send(user.Email, "user_welcome.tmpl", templateInput)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
 
 
+	// send response:
 	var output struct{
 		data.User 
 		Otp string `json:"otp"`
@@ -140,6 +154,10 @@ func (app *application) verifyOTP(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Print("otp code retrieved")
 
+	log.Printf("otp from cache: ", otp_cache)
+	log.Printf("otp from user: ", input.OTP)
+
+
 	err = tokens.VerifyOTPMatch(otp_cache, input.OTP)
 	if err != nil {
 		app.failedValidationResponse(w, r, map[string]string{
@@ -155,6 +173,7 @@ func (app *application) verifyOTP(w http.ResponseWriter, r *http.Request) {
 		app.serverErrorResponse(w, r, err)
 		return
 	}
+	log.Print("activation code retrieved")
 
 	err = tokens.VerifyActivationCode(activation_cache, input.ActivationCode)
 	if err != nil {
@@ -163,6 +182,7 @@ func (app *application) verifyOTP(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
+	log.Print("activation code verified")
 
 	// alter the state in the user table
 	err = app.models.Users.ChangeOTPSate(input.UserID)

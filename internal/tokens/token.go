@@ -34,7 +34,7 @@ func SetActivationCache(r *http.Request, userID int, activationCode string, clie
 
 	key := fmt.Sprintf("%s:%d", ActivationToken, userID)
 
-	err := client.Set(r.Context(), ActivationToken, key, 5 * time.Minute).Err()
+	err := client.Set(r.Context(), key, activationCode, 5 * time.Minute).Err()
 	if err != nil {
 		return err
 	}
@@ -46,7 +46,7 @@ func GetActivationCode(r *http.Request, userID int, client *redis.Client) (strin
 	key := fmt.Sprintf("%s:%d", ActivationToken, userID)
 
 	val, err := client.Get(r.Context(), key).Result()
-	if err == nil {
+	if err != nil {
 		return "", err
 	}
 
